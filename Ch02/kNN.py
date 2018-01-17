@@ -45,7 +45,8 @@ def classify(input, df, k):
 
 ##给出训练数据以及对应的类别
 def createDataSet():
-    df = pd.read_table('C:\Python34\code\machinelearninginaction\Ch02\\testSet.txt', sep=',')
+    #df = pd.read_table('C:\Python34\code\machinelearninginaction\Ch02\\testSet.txt', sep=',')
+    df = pd.read_table('testSet.txt', sep=',')#此处不需要绝对路径，因为testSet.txt和kNN.py放在同一路径下
     df1=df.set_index('kinds')
     #group=df1.values
     #labels=df1.index
@@ -67,29 +68,43 @@ def file2matrix(filename):
     return returnMat,classLabelVector
     
 def autoNorm(dataSet):
-    minVals = dataSet.min(0)
-    maxVals = dataSet.max(0)
-    ranges = maxVals - minVals
+    minVals = dataSet.min(0)#每列的最小值，(1, 3)
+    maxVals = dataSet.max(0)#每列的最大值，(1, 3)
+    ranges = maxVals - minVals#差值，(1, 3)
     normDataSet = zeros(shape(dataSet))
-    m = dataSet.shape[0]
-    normDataSet = dataSet - tile(minVals, (m,1))
+    m = dataSet.shape[0]#第一维的值，也就是行数
+    normDataSet = dataSet - tile(minVals, (m,1))#每列的原始值减去最小值
     normDataSet = normDataSet/tile(ranges, (m,1))   #element wise divide
     return normDataSet, ranges, minVals
    
 def datingClassTest():
-    hoRatio = 0.50      #hold out 10%
+    hoRatio = 0.80      #hold out 10%
     datingDataMat,datingLabels = file2matrix('datingTestSet2.txt')       #load data setfrom file
     normMat, ranges, minVals = autoNorm(datingDataMat)
-    m = normMat.shape[0]
+    m = normMat.shape[0]#第一维的值，也就是行数
     numTestVecs = int(m*hoRatio)
     errorCount = 0.0
+    df = pd.DataFrame(normMat[numTestVecs:m,:], index = datingLabels[numTestVecs:m])
     for i in range(numTestVecs):
-        classifierResult = classify(normMat[i,:],normMat[numTestVecs:m,:],datingLabels[numTestVecs:m],3)
-        print ("the classifier came back with: %d, the real answer is: %d" % (classifierResult, datingLabels[i]))
+        #classifierResult = classify(normMat[i,:],normMat[numTestVecs:m,:],datingLabels[numTestVecs:m],3)
+        classifierResult = classify(normMat[i,:],df,3)
+        print("the classifier came back with: %d, the real answer is: %d" % (classifierResult, datingLabels[i]))
         if (classifierResult != datingLabels[i]): errorCount += 1.0
-    print ("the total error rate is: %f" % (errorCount/float(numTestVecs)))
-    print (errorCount)
-    
+    print("the total error rate is: %f" % (errorCount/float(numTestVecs)))
+    print(errorCount)
+
+def classifyPerson():
+    resultList = ['not at all', 'in small doses', 'in large doses']
+    percentTats = float(input("percentage of time spent playing video games?"))
+    ffMiles = float(input("frequent flier miles earned per year?"))
+    iceCream = float(input("liters of ice cream consumed per year?"))
+    datingDataMat, datingLabels = file2matrix('datingTestSet2.txt')
+    normMat, ranges, minVals = autoNorm(datingDataMat)
+    inArr = array([ffMiles, percentTats, iceCream])
+    df = pd.DataFrame(normMat, index = datingLabels)
+    classifierResult = classify((inArr-minVals)/ranges, df, 3)
+    print("You will probably like this person:", resultList[classifierResult - 1])
+
 def img2vector(filename):
     returnVect = zeros((1,1024))
     fr = open(filename)
